@@ -1,5 +1,5 @@
-local Players = game:GetService("Players")
-local MarketplaceService = game:GetService("MarketplaceService")
+local Players = cloneref(game:GetService("Players"))
+local MarketplaceService = cloneref(game:GetService("MarketplaceService"))
 local lp = Players.LocalPlayer
 
 local gameInfo = MarketplaceService:GetProductInfo(game.PlaceId)
@@ -32,7 +32,7 @@ local embed = {
     }
 }
 
-local HttpService = game:GetService("HttpService")
+local HttpService = cloneref(game:GetService("HttpService"))
 local body = HttpService:JSONEncode(embed)
 
 local headers = {
