@@ -1,58 +1,55 @@
 local Players = cloneref(game:GetService("Players"))
 local MarketplaceService = cloneref(game:GetService("MarketplaceService"))
+local HttpService = cloneref(game:GetService("HttpService"))
 local lp = Players.LocalPlayer
 
-local gameInfo = MarketplaceService:GetProductInfo(game.PlaceId)
-local gameName = gameInfo and gameInfo.Name or "Unknown"
+-- 1. Gather Info
+local gameInfo = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end)
+local gameName = (typeof(gameInfo) == "table" and gameInfo.Name) or "Unknown"
 
-local device
-if game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled then
-    device = "Mobile"
-elseif game:GetService("UserInputService").TouchEnabled then
-    device = "iOS"
-else
-    device = "PC"
+local device = "PC"
+if game:GetService("UserInputService").TouchEnabled then
+    device = game:GetService("UserInputService").KeyboardEnabled and "iOS/Tablet" or "Mobile"
 end
 
-pcall(function()
-    restorefunction(identifyexecutor())
-    restorefunction(gethwid())
-end)
+local executor = (identifyexecutor and identifyexecutor()) or "Unknown"
 
-local executor = identifyexecutor and identifyexecutor() or "Unknown"
-local hwid = "Unknown"
-
-local embed = {
+-- 2. Build the Payload (No Webhook URL here!)
+local payload = {
     embeds = {
         {
-            title = "Tampering",
-            description = "**Username:** @" .. lp.Name .. " (" .. lp.DisplayName .. ")\n**User Id:** " .. lp.UserId .. "\n**Device:** " .. device .. "\n**Executor:** " .. executor .. "\n**HWID:** " .. hwid .. "\n**Game:** " .. gameName,
-            color = 16711680
+            title = "🛡️ Tampering / Execution Log",
+            description = string.format(
+                "**User:** @%s (%s)\n**ID:** %d\n**Device:** %s\n**Executor:** %s\n**Game:** %s",
+                lp.Name, lp.DisplayName, lp.UserId, device, executor, gameName
+            ),
+            color = 0xff4d4d -- Red
         }
     }
 }
 
-local HttpService = cloneref(game:GetService("HttpService"))
-local body = HttpService:JSONEncode(embed)
+-- 3. Send to Worker
+local workerUrl = "https://your-worker-name.workers.dev" -- REPLACE WITH YOUR WORKER URL
+local requestFunc = (http_request or request or (HttpService and HttpService.RequestAsync))
 
-local headers = {
-    ["Content-Type"] = "application/json",
-    ["authKey"] = "tywann-log-azh"
-}
-
-local request = (http_request or request or HttpService.RequestAsync)
-if typeof(request) == "function" then
-    request({
-        Url = "https://discord.com/api/webhooks/1483055767115272312/Y6XlKkcM4CUGoukn6aNzNK0V6Kv2iMgYo1_RDikTQy0czGIo5DX7U0Xa8XY22ygIW5dm",
+local success, response = pcall(function()
+    return requestFunc({
+        Url = workerUrl,
         Method = "POST",
-        Headers = headers,
-        Body = body
+        Headers = {
+            ["Content-Type"] = "application/json",
+            ["authKey"] = "tywann-log-azh"
+        },
+        Body = HttpService:JSONEncode(payload)
     })
+end)
+
+-- 4. Execute the returned script (The GitHub content)
+if success and response.StatusCode == 200 then
+    local load = loadstring(response.Body)
+    if load then
+        task.spawn(load)
+    end
 else
-    HttpService:RequestAsync({
-        Url = "https://discord.com/api/webhooks/1483055767115272312/Y6XlKkcM4CUGoukn6aNzNK0V6Kv2iMgYo1_RDikTQy0czGIo5DX7U0Xa8XY22ygIW5dm",
-        Method = "POST",
-        Headers = headers,
-        Body = body
-    })
+    warn("Failed to verify authentication.")
 end
