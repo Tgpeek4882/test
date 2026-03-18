@@ -29,7 +29,7 @@ local payload = {
 }
 
 -- 3. Send to Worker
-local workerUrl = "https://your-worker-name.workers.dev" -- REPLACE WITH YOUR WORKER URL
+local workerUrl = "http://coding-ai.mirbekaskarbek6.workers.dev" -- REPLACE WITH YOUR WORKER URL
 local requestFunc = (http_request or request or (HttpService and HttpService.RequestAsync))
 
 local success, response = pcall(function()
