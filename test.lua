@@ -30,10 +30,10 @@ local payload = {
 
 -- 3. Send to Worker
 local workerUrl = "http://coding-ai.mirbekaskarbek6.workers.dev" -- REPLACE WITH YOUR WORKER URL
-local requestFunc = (http_request or request or (HttpService and HttpService.RequestAsync))
+local request = (syn and syn.request) or (http and http.request) or http_request or request
 
 local success, response = pcall(function()
-    return requestFunc({
+    return request({
         Url = workerUrl,
         Method = "POST",
         Headers = {
